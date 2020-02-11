@@ -1,9 +1,6 @@
 ﻿{
-    "Logging": {
-        "LogLevel": {
-            "Default": "Debug",
-            "System": "Information",
-            "Microsoft": "Information"
-        }
-    }
+  "OvhApplicationKey": "AA",
+  "OvhApplicationSecret": "BB",
+  "OvhConsumerKey": "CC",
+  "OvhDomainName": "DD"
 }
