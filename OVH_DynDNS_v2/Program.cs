@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
+using System.Net.Mail;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Ovh.Api;
@@ -75,13 +77,15 @@ namespace OVH_DynDNS_v2
 
                         // Step 3 : looping between each record to check if the target IP corresponds to the public IP obtained in Step 1
 
+                        List<UpdatedRecord> updatedRecords = new List<UpdatedRecord>();
+
                         foreach (long recordId in records)
                         {
-                            Record record = await ovhApiWrapper.GetRecordDetails(recordId);
+                            PartialRecord partialRecord = await ovhApiWrapper.GetRecordDetails(recordId);
 
-                            Console.WriteLine($"The registered public IP in OVH DNS is: {record.Target}");
+                            Console.WriteLine($"The registered public IP in OVH DNS is: {partialRecord.Target}");
 
-                            if (record.Target == publicIp)
+                            if (partialRecord.Target == publicIp)
                             {
                                 Console.WriteLine("The current public IP and OVH target are identical! Rechecking later");
                             }
@@ -89,37 +93,55 @@ namespace OVH_DynDNS_v2
                             {
                                 Console.WriteLine("The current public IP and OVH target are different! Updating the OVH target now");
 
-                                // string previousIp = record.Target;
+                                string previousTarget = partialRecord.Target;
+                                partialRecord.Target = publicIp;
 
-                                record.Target = publicIp;
-
-                                await ovhApiWrapper.PutRecordDetails(recordId, record);
+                                await ovhApiWrapper.PutRecordDetails(recordId, partialRecord);
                                 await ovhApiWrapper.PostRefreshZone();
 
                                 Console.WriteLine("OVH target updated successfully!");
 
-                                // Console.WriteLine("Sending notification email...");
-                                //
-                                // using (SmtpClient client = new SmtpClient(_config.MailSmtpHost, _config.MailSmtpPort)
-                                // {
-                                //     UseDefaultCredentials = false,
-                                //     Credentials = new NetworkCredential(_config.MailSmtpUsername, _config.MailSmtpPassword),
-                                //     EnableSsl = _config.MailEnableSsl,
-                                //     Timeout = TimeSpan.FromSeconds(30).Milliseconds
-                                // })
-                                // {
-                                //     MailMessage mailMessage = new MailMessage {From = new MailAddress(_config.MailFrom)};
-                                //     mailMessage.To.Add(_config.MailTo);
-                                //     mailMessage.Body =
-                                //         $"Old IP address: {previousIp}\r\n" +
-                                //         $"New IP address: {publicIp}";
-                                //     mailMessage.Subject = $"OVH Domain Target Updated at {DateTime.Now:dd/MM/yyyy HH:mm:ss}!";
-                                //     client.Send(mailMessage);
-                                // }
-                                //
-                                // Console.WriteLine("Email notification sent!");
+                                updatedRecords.Add(new UpdatedRecord {PartialRecord = partialRecord, PreviousTarget = previousTarget});
                             }
                         }
+
+                        // Step 4 : sending recap by email
+
+                        Console.WriteLine("Sending notification email...");
+
+                        using (SmtpClient client = new SmtpClient(config.MailSmtpHost, config.MailSmtpPort)
+                        {
+                            UseDefaultCredentials = false,
+                            Credentials = new NetworkCredential(config.MailSmtpUsername, config.MailSmtpPassword),
+                            EnableSsl = config.MailEnableSsl,
+                            Timeout = TimeSpan.FromSeconds(20).Milliseconds
+                        })
+                        {
+                            MailMessage mailMessage = new MailMessage {From = new MailAddress(config.MailFrom)};
+                            mailMessage.To.Add(config.MailTo);
+
+                            mailMessage.Body =
+                                "Your public IP has changed! Here is the detail of the updated OVH DNS records:\r\n" +
+                                "\r\n";
+
+                            foreach (UpdatedRecord updatedRecord in updatedRecords)
+                            {
+                                mailMessage.Body +=
+                                    $"{(!string.IsNullOrEmpty(updatedRecord.PartialRecord.SubDomain) ? "Sub-domain" : "Domain")} updated: " +
+                                    $"{(!string.IsNullOrEmpty(updatedRecord.PartialRecord.SubDomain) ? updatedRecord.PartialRecord.SubDomain + "." : string.Empty)}" +
+                                    $"{updatedRecord.PartialRecord.Zone}\r\n" +
+                                    $"   >>   Old IP address: {updatedRecord.PreviousTarget}\r\n" +
+                                    $"   >>   New IP address: {updatedRecord.PartialRecord.Target}\r\n" +
+                                    "\r\n";
+                            }
+
+                            mailMessage.Subject = $"OVH Domain Target Updated on {DateTime.Now:dd/MM/yyyy HH:mm:ss}!";
+                            client.Send(mailMessage);
+                        }
+
+                        Console.WriteLine("Email notification sent!");
+
+                        updatedRecords.Clear();
 
                         await Task.Delay(TimeSpan.FromMinutes(5));
                     }
@@ -140,10 +162,19 @@ namespace OVH_DynDNS_v2
         public string OvhApplicationSecret { get; set; }
         public string OvhConsumerKey { get; set; }
         public string OvhDomainName { get; set; }
+
+        public string MailSmtpHost { get; set; }
+        public int MailSmtpPort { get; set; }
+        public string MailSmtpUsername { get; set; }
+        public string MailSmtpPassword { get; set; }
+        public bool MailEnableSsl { get; set; }
+        public string MailFrom { get; set; }
+        public string MailTo { get; set; }
     }
 
-    public class PartialRecord
+    public class UpdatedRecord
     {
-        public string Target { get; set; }
+        public PartialRecord PartialRecord { get; set; }
+        public string PreviousTarget { get; set; }
     }
 }

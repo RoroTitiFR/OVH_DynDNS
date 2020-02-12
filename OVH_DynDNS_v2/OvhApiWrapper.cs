@@ -1,5 +1,4 @@
 using System;
-using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -36,7 +35,7 @@ namespace OVH_DynDNS_v2
             return JsonConvert.DeserializeObject<long[]>(result);
         }
 
-        public async Task<Record> GetRecordDetails(long recordId)
+        public async Task<PartialRecord> GetRecordDetails(long recordId)
         {
             string query = $"https://eu.api.ovh.com/1.0/domain/zone/{DomainName}/record/{recordId}";
 
@@ -45,10 +44,11 @@ namespace OVH_DynDNS_v2
             managedHttpClient.BuildSignature("GET", query, string.Empty, timestamp);
 
             string result = await managedHttpClient.GetStringAsync(query);
-            return JsonConvert.DeserializeObject<Record>(result);
+            
+            return JsonConvert.DeserializeObject<PartialRecord>(result);
         }
 
-        public async Task PutRecordDetails(long dnsRecordId, Record record)
+        public async Task PutRecordDetails(long dnsRecordId, PartialRecord partialRecord)
         {
             string query = $"https://eu.api.ovh.com/1.0/domain/zone/{DomainName}/record/{dnsRecordId}";
 
@@ -57,7 +57,7 @@ namespace OVH_DynDNS_v2
                 ContractResolver = new DefaultContractResolver {NamingStrategy = new CamelCaseNamingStrategy()}
             };
 
-            string jsonRecord = JsonConvert.SerializeObject(record, jsonSerializerSettings);
+            string jsonRecord = JsonConvert.SerializeObject(partialRecord, jsonSerializerSettings);
             StringContent stringContent = new StringContent(jsonRecord, Encoding.UTF8, "application/json");
 
             string timestamp = await GetOvhTimestamp();
@@ -85,8 +85,10 @@ namespace OVH_DynDNS_v2
         }
     }
 
-    public class Record
+    public class PartialRecord
     {
+        public string SubDomain { get; set; }
+        public string Zone { get; set; }
         public string Target { get; set; }
     }
 
