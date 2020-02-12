@@ -107,7 +107,7 @@ namespace OVH_DynDNS_v2
 
                         // Step 4 : sending recap by email
 
-                        if (config.MailEnableNotifications)
+                        if (config.MailEnableNotifications && updatedRecords.Count > 0)
                         {
                             Console.WriteLine("Sending notification email...");
 
@@ -143,8 +143,6 @@ namespace OVH_DynDNS_v2
 
                             Console.WriteLine("Email notification sent!");
                         }
-
-                        updatedRecords.Clear();
 
                         await Task.Delay(TimeSpan.FromMinutes(5));
                     }
