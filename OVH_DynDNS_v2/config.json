@@ -1,13 +1,14 @@
 ﻿{
-  "OvhApplicationKey": "",
-  "OvhApplicationSecret": "",
-  "OvhConsumerKey": "",
-  "OvhDomainName": "",
-  "MailSmtpHost": "",
-  "MailSmtpPort": "",
-  "MailSmtpUsername": "",
-  "MailSmtpPassword": "",
-  "MailEnableSsl": "",
-  "MailFrom": "",
-  "MailTo": ""
+  "OvhApplicationKey": "KEY",
+  "OvhApplicationSecret": "SECRET",
+  "OvhConsumerKey": "CONSUMER_KEY",
+  "OvhDomainName": "example.com",
+  "MailEnableNotifications": false,
+  "MailSmtpHost": "smtp.example.com",
+  "MailSmtpPort": 587,
+  "MailSmtpUsername": "USERNAME",
+  "MailSmtpPassword": "PASSWORD",
+  "MailEnableSsl": true,
+  "MailFrom": "DDNS Agent <no-reply@example.com>",
+  "MailTo": "contact@example.com"
 }

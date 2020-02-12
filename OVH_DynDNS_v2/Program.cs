@@ -107,39 +107,42 @@ namespace OVH_DynDNS_v2
 
                         // Step 4 : sending recap by email
 
-                        Console.WriteLine("Sending notification email...");
-
-                        using (SmtpClient client = new SmtpClient(config.MailSmtpHost, config.MailSmtpPort)
+                        if (config.MailEnableNotifications)
                         {
-                            UseDefaultCredentials = false,
-                            Credentials = new NetworkCredential(config.MailSmtpUsername, config.MailSmtpPassword),
-                            EnableSsl = config.MailEnableSsl,
-                            Timeout = TimeSpan.FromSeconds(20).Milliseconds
-                        })
-                        {
-                            MailMessage mailMessage = new MailMessage {From = new MailAddress(config.MailFrom)};
-                            mailMessage.To.Add(config.MailTo);
+                            Console.WriteLine("Sending notification email...");
 
-                            mailMessage.Body =
-                                "Your public IP has changed! Here is the detail of the updated OVH DNS records:\r\n" +
-                                "\r\n";
-
-                            foreach (UpdatedRecord updatedRecord in updatedRecords)
+                            using (SmtpClient client = new SmtpClient(config.MailSmtpHost, config.MailSmtpPort)
                             {
-                                mailMessage.Body +=
-                                    $"{(!string.IsNullOrEmpty(updatedRecord.PartialRecord.SubDomain) ? "Sub-domain" : "Domain")} updated: " +
-                                    $"{(!string.IsNullOrEmpty(updatedRecord.PartialRecord.SubDomain) ? updatedRecord.PartialRecord.SubDomain + "." : string.Empty)}" +
-                                    $"{updatedRecord.PartialRecord.Zone}\r\n" +
-                                    $"   >>   Old IP address: {updatedRecord.PreviousTarget}\r\n" +
-                                    $"   >>   New IP address: {updatedRecord.PartialRecord.Target}\r\n" +
+                                UseDefaultCredentials = false,
+                                Credentials = new NetworkCredential(config.MailSmtpUsername, config.MailSmtpPassword),
+                                EnableSsl = config.MailEnableSsl,
+                                Timeout = TimeSpan.FromSeconds(20).Milliseconds
+                            })
+                            {
+                                MailMessage mailMessage = new MailMessage {From = new MailAddress(config.MailFrom)};
+                                mailMessage.To.Add(config.MailTo);
+
+                                mailMessage.Body =
+                                    "Your public IP has changed! Here is the detail of the updated OVH DNS records:\r\n" +
                                     "\r\n";
+
+                                foreach (UpdatedRecord updatedRecord in updatedRecords)
+                                {
+                                    mailMessage.Body +=
+                                        $"{(!string.IsNullOrEmpty(updatedRecord.PartialRecord.SubDomain) ? "Sub-domain" : "Domain")} updated: " +
+                                        $"{(!string.IsNullOrEmpty(updatedRecord.PartialRecord.SubDomain) ? updatedRecord.PartialRecord.SubDomain + "." : string.Empty)}" +
+                                        $"{updatedRecord.PartialRecord.Zone}\r\n" +
+                                        $"   >>   Old IP address: {updatedRecord.PreviousTarget}\r\n" +
+                                        $"   >>   New IP address: {updatedRecord.PartialRecord.Target}\r\n" +
+                                        "\r\n";
+                                }
+
+                                mailMessage.Subject = $"OVH Domain Target Updated on {DateTime.Now:dd/MM/yyyy HH:mm:ss}!";
+                                client.Send(mailMessage);
                             }
 
-                            mailMessage.Subject = $"OVH Domain Target Updated on {DateTime.Now:dd/MM/yyyy HH:mm:ss}!";
-                            client.Send(mailMessage);
+                            Console.WriteLine("Email notification sent!");
                         }
-
-                        Console.WriteLine("Email notification sent!");
 
                         updatedRecords.Clear();
 
@@ -163,6 +166,7 @@ namespace OVH_DynDNS_v2
         public string OvhConsumerKey { get; set; }
         public string OvhDomainName { get; set; }
 
+        public bool MailEnableNotifications { get; set; }
         public string MailSmtpHost { get; set; }
         public int MailSmtpPort { get; set; }
         public string MailSmtpUsername { get; set; }
