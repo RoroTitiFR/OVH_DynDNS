@@ -141,14 +141,11 @@ namespace OVH_DynDNS_v2
 
                         Console.WriteLine("Email notification sent!");
                     }
-
-                    await Task.Delay(TimeSpan.FromMinutes(5));
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e);
                     Console.WriteLine("Recovering after error... Waiting 10 seconds before retrying...");
-                    await Task.Delay(TimeSpan.FromSeconds(10));
                 }
             }
         }
