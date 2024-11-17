@@ -21,7 +21,7 @@ namespace OVH_DynDNS_v2
 
             IConfigurationRoot configuration = builder.Build();
 
-            Config config = new Config();
+            Config config = new();
             configuration.Bind(config);
 
             Console.WriteLine("Loaded settings :");
@@ -32,14 +32,14 @@ namespace OVH_DynDNS_v2
 
             if (args.Length > 0 && args[0].Contains("get-ck"))
             {
-                Client client = new Client("ovh-eu", config.OvhApplicationKey, config.OvhApplicationSecret);
-                CredentialRequest credentialRequest = new CredentialRequest(
+                Client client = new("ovh-eu", config.OvhApplicationKey, config.OvhApplicationSecret);
+                CredentialRequest credentialRequest = new(
                     new List<AccessRight>
                     {
-                        new AccessRight("GET", "/*"),
-                        new AccessRight("PUT", "/*"),
-                        new AccessRight("POST", "/*"),
-                        new AccessRight("DELETE", "/*"),
+                        new("GET", "/*"),
+                        new("PUT", "/*"),
+                        new("POST", "/*"),
+                        new("DELETE", "/*"),
                     },
                     "https://example.com/" // Change this URL if you don't want to see an unreachable webpage after you validated your consumer key. An unreachable webpage does not mean that the validation has failed.
                 );
@@ -54,7 +54,7 @@ namespace OVH_DynDNS_v2
             }
             else
             {
-                OvhApiWrapper ovhApiWrapper = new OvhApiWrapper(config.OvhApplicationKey, config.OvhApplicationSecret, config.OvhConsumerKey, config.OvhDomainName);
+                OvhApiWrapper ovhApiWrapper = new(config.OvhApplicationKey, config.OvhApplicationSecret, config.OvhConsumerKey, config.OvhDomainName);
 
                 while (true)
                 {
@@ -64,7 +64,7 @@ namespace OVH_DynDNS_v2
 
                         string publicIp;
 
-                        using (HttpClient httpClient = new HttpClient())
+                        using (HttpClient httpClient = new())
                         {
                             publicIp = await httpClient.GetStringAsync("https://api.ipify.org");
                         }
@@ -77,7 +77,7 @@ namespace OVH_DynDNS_v2
 
                         // Step 3 : looping between each record to check if the target IP corresponds to the public IP obtained in Step 1
 
-                        List<UpdatedRecord> updatedRecords = new List<UpdatedRecord>();
+                        List<UpdatedRecord> updatedRecords = new();
 
                         foreach (long recordId in records)
                         {
@@ -111,7 +111,7 @@ namespace OVH_DynDNS_v2
                         {
                             Console.WriteLine("Sending notification email...");
 
-                            using (SmtpClient client = new SmtpClient(config.MailSmtpHost, config.MailSmtpPort)
+                            using (SmtpClient client = new(config.MailSmtpHost, config.MailSmtpPort)
                             {
                                 UseDefaultCredentials = false,
                                 Credentials = new NetworkCredential(config.MailSmtpUsername, config.MailSmtpPassword),
@@ -119,7 +119,7 @@ namespace OVH_DynDNS_v2
                                 Timeout = TimeSpan.FromSeconds(20).Milliseconds
                             })
                             {
-                                MailMessage mailMessage = new MailMessage {From = new MailAddress(config.MailFrom)};
+                                MailMessage mailMessage = new() {From = new MailAddress(config.MailFrom)};
                                 mailMessage.To.Add(config.MailTo);
 
                                 mailMessage.Body =

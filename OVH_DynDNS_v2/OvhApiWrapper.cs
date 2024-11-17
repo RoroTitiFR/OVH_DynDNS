@@ -28,7 +28,7 @@ namespace OVH_DynDNS_v2
             string query = $"https://eu.api.ovh.com/1.0/domain/zone/{DomainName}/record?fieldType={fieldType}";
 
             string timestamp = await GetOvhTimestamp();
-            using ManagedHttpClient managedHttpClient = new ManagedHttpClient(ApplicationKey, ApplicationSecret, ConsumerKey, timestamp);
+            using ManagedHttpClient managedHttpClient = new(ApplicationKey, ApplicationSecret, ConsumerKey, timestamp);
             managedHttpClient.BuildSignature("GET", query, string.Empty, timestamp);
 
             string result = await managedHttpClient.GetStringAsync(query);
@@ -40,11 +40,11 @@ namespace OVH_DynDNS_v2
             string query = $"https://eu.api.ovh.com/1.0/domain/zone/{DomainName}/record/{recordId}";
 
             string timestamp = await GetOvhTimestamp();
-            using ManagedHttpClient managedHttpClient = new ManagedHttpClient(ApplicationKey, ApplicationSecret, ConsumerKey, timestamp);
+            using ManagedHttpClient managedHttpClient = new(ApplicationKey, ApplicationSecret, ConsumerKey, timestamp);
             managedHttpClient.BuildSignature("GET", query, string.Empty, timestamp);
 
             string result = await managedHttpClient.GetStringAsync(query);
-            
+
             return JsonConvert.DeserializeObject<PartialRecord>(result);
         }
 
@@ -52,16 +52,16 @@ namespace OVH_DynDNS_v2
         {
             string query = $"https://eu.api.ovh.com/1.0/domain/zone/{DomainName}/record/{dnsRecordId}";
 
-            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings
+            JsonSerializerSettings jsonSerializerSettings = new()
             {
-                ContractResolver = new DefaultContractResolver {NamingStrategy = new CamelCaseNamingStrategy()}
+                ContractResolver = new DefaultContractResolver { NamingStrategy = new CamelCaseNamingStrategy() }
             };
 
             string jsonRecord = JsonConvert.SerializeObject(partialRecord, jsonSerializerSettings);
-            StringContent stringContent = new StringContent(jsonRecord, Encoding.UTF8, "application/json");
+            StringContent stringContent = new(jsonRecord, Encoding.UTF8, "application/json");
 
             string timestamp = await GetOvhTimestamp();
-            using ManagedHttpClient managedHttpClient = new ManagedHttpClient(ApplicationKey, ApplicationSecret, ConsumerKey, timestamp);
+            using ManagedHttpClient managedHttpClient = new(ApplicationKey, ApplicationSecret, ConsumerKey, timestamp);
             managedHttpClient.BuildSignature("PUT", query, await stringContent.ReadAsStringAsync(), timestamp);
 
             await managedHttpClient.PutAsync(query, stringContent);
@@ -72,7 +72,7 @@ namespace OVH_DynDNS_v2
             string query = $"https://eu.api.ovh.com/1.0/domain/zone/{DomainName}/refresh";
 
             string timestamp = await GetOvhTimestamp();
-            using ManagedHttpClient managedHttpClient = new ManagedHttpClient(ApplicationKey, ApplicationSecret, ConsumerKey, timestamp);
+            using ManagedHttpClient managedHttpClient = new(ApplicationKey, ApplicationSecret, ConsumerKey, timestamp);
             managedHttpClient.BuildSignature("POST", query, string.Empty, timestamp);
 
             await managedHttpClient.PostAsync(query, null);
@@ -80,7 +80,7 @@ namespace OVH_DynDNS_v2
 
         private static async Task<string> GetOvhTimestamp()
         {
-            using HttpClient httpClient = new HttpClient();
+            using HttpClient httpClient = new();
             return await httpClient.GetStringAsync("https://eu.api.ovh.com/1.0/auth/time");
         }
     }
@@ -117,10 +117,10 @@ namespace OVH_DynDNS_v2
         {
             string preHash = $"{ApplicationSecret}+{ConsumerKey}+{method}+{query}+{body}+{timestamp}";
 
-            using SHA1Managed sha1Managed = new SHA1Managed();
+            SHA1 sha1Managed = SHA1.Create();
 
             byte[] hash = sha1Managed.ComputeHash(Encoding.UTF8.GetBytes(preHash));
-            StringBuilder stringBuilder = new StringBuilder(hash.Length * 2);
+            StringBuilder stringBuilder = new(hash.Length * 2);
 
             foreach (byte b in hash)
             {
